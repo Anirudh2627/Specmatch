@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "specmatch"
+version = "0.1.0"
+description = "A from-scratch speculative decoding engine with reproducible CPU/GPU benchmarks"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = [
+    "torch>=2.2",
+    "transformers>=5.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pandas",
+    "matplotlib",
+    "jupyter",
+]
+demo = [
+    "streamlit",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

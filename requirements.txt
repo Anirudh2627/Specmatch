@@ -1,0 +1,23 @@
+# Core runtime
+torch>=2.2
+transformers>=5.0
+
+# Benchmarking / analysis / tests
+pandas
+matplotlib
+jupyter
+pytest
+
+# Draft-model distillation (scripts/train_draft.py) only:
+pyarrow
+
+# Demo web UI (demo/app.py) only - the CLI mode needs nothing extra:
+#   pip install streamlit        (or: pip install -e ".[demo]")
+
+# NOTE (CPU-only machines): install torch from the CPU index to avoid
+# pulling multi-GB CUDA wheels:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+#
+# Versions used for the results committed in benchmarks/results/:
+#   Python 3.11.2, torch 2.14.0+cpu, transformers 5.17.0
+#   Hardware: 2x Intel Xeon @ 2.50GHz, 1 GiB RAM, no GPU.

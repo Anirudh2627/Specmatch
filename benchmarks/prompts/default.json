@@ -1,0 +1,65 @@
+{
+  "description": "Fixed SpecMatch benchmark prompts. Four workload categories (Experiment D). Kept short (<45 tokens) because gpt2's context is 1024 and CPU decode is slow; identical set used for baseline and speculative runs.",
+  "prompts": [
+    {
+      "id": "qa-seasons",
+      "category": "qa",
+      "prompt": "Question: What causes the seasons on Earth?\nAnswer:"
+    },
+    {
+      "id": "qa-photosynthesis",
+      "category": "qa",
+      "prompt": "Question: Why is the sky blue during the day?\nAnswer:"
+    },
+    {
+      "id": "qa-history",
+      "category": "qa",
+      "prompt": "Question: Who wrote the play Romeo and Juliet?\nAnswer:"
+    },
+    {
+      "id": "code-fibonacci",
+      "category": "code",
+      "prompt": "def fibonacci(n):\n    \"\"\"Return the first n Fibonacci numbers as a list.\"\"\""
+    },
+    {
+      "id": "code-reverse",
+      "category": "code",
+      "prompt": "# Write a Python function that reverses a string\ndef reverse_string(s):"
+    },
+    {
+      "id": "code-class",
+      "category": "code",
+      "prompt": "class Stack:\n    def __init__(self):\n        self.items = []\n\n    def push(self, item):"
+    },
+    {
+      "id": "sum-industrial",
+      "category": "summarization",
+      "prompt": "Summarize in one sentence: The Industrial Revolution began in Britain in the late 18th century. Mechanized production replaced hand tools, factories replaced workshops, and millions of people moved from farms to cities.\nSummary:"
+    },
+    {
+      "id": "sum-story",
+      "category": "summarization",
+      "prompt": "Summarize in one sentence: A young fox wandered far from its den during a storm. After a long night it followed the river home and was reunited with its family at dawn.\nSummary:"
+    },
+    {
+      "id": "sum-science",
+      "category": "summarization",
+      "prompt": "Summarize in one sentence: Vaccines train the immune system by exposing it to a harmless piece of a pathogen, so that the body can respond quickly if it ever encounters the real disease.\nSummary:"
+    },
+    {
+      "id": "expl-neural-net",
+      "category": "explanation",
+      "prompt": "Explain what a neural network is in simple terms:"
+    },
+    {
+      "id": "expl-gravity",
+      "category": "explanation",
+      "prompt": "Explain why the moon orbits the Earth:"
+    },
+    {
+      "id": "expl-compound-interest",
+      "category": "explanation",
+      "prompt": "Explain how compound interest works:"
+    }
+  ]
+}
