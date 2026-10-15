@@ -51,6 +51,15 @@ def main():
                      draft_model=args.draft, target_model=args.target, dtype=args.dtype)
 
     prompt = args.prompt or "The meaning of life is"
+    if args.compare:
+        # Warm up both paths before collecting comparison timings.
+        warm_cfg = SpecConfig(**{
+            **cfg.to_dict(),
+            "max_new_tokens": min(8, cfg.max_new_tokens),
+            "seed": 0,
+        })
+        baseline_generate(target, tokenizer, prompt, warm_cfg, device)
+        speculative_generate(draft, target, tokenizer, prompt, warm_cfg, device)
     text, stats = speculative_generate(draft, target, tokenizer, prompt, cfg, device)
     print(f"\nprompt: {prompt!r}")
     print(f"output: {text!r}")
