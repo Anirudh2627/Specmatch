@@ -318,11 +318,9 @@ Measuring every baseline run first and every speculative run afterward can intro
 
 Aggregate throughput is calculated as:
 
-$$
-T_{\mathrm{aggregate}}
-=
-\frac{\sum_i N_i}{\sum_i t_i}
-$$
+```math
+T_{\mathrm{aggregate}} = \frac{\sum_i N_i}{\sum_i t_i}
+```
 
 Here, \(N_i\) is the number of generated tokens and \(t_i\) is the measured wall time for run \(i\).
 
@@ -399,11 +397,9 @@ The project records baseline and speculative generation measurements using a ben
 
 **Aggregate throughput**
 
-$$
-T_{\mathrm{aggregate}}
-=
-\frac{\sum_i N_i}{\sum_i t_i}
-$$
+```math
+T_{\mathrm{aggregate}} = \frac{\sum_i N_i}{\sum_i t_i}
+```
 
 **Mean throughput**
 
@@ -441,12 +437,9 @@ A value above \(1\) indicates lower speculative latency for that pair. A value b
 
 When the compared runs use compatible workloads and measurement conditions, aggregate speedup can be calculated from their aggregate throughput values:
 
-$$
-S_{\mathrm{aggregate}}
-=
-\frac{T_{\mathrm{speculative}}}
-{T_{\mathrm{baseline}}}
-$$
+```math
+S_{\mathrm{aggregate}} = \frac{T_{\mathrm{speculative}}}{T_{\mathrm{baseline}}}
+```
 
 A value above \(1\) indicates higher speculative throughput.
 
