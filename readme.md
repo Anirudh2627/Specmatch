@@ -735,25 +735,25 @@ The interface includes options for:
 
 ### Example: baseline and speculative comparison
 
-```bash
-python scripts/benchmark.py \
-  --mode both \
-  -K 2 \
-  --device xpu \
-  --dtype float32 \
+```powershell
+python scripts/benchmark.py `
+  --mode both `
+  -K 2 `
+  --device xpu `
+  --dtype float32 `
   --out benchmarks/results/my_experiment.json
 ```
 
-This example illustrates the documented CLI options. If the current version requires additional arguments, such as prompt selection or output length, supply them according to `python scripts/benchmark.py --help`.
+This example uses PowerShell line-continuation syntax. If the current version requires additional arguments, such as prompt selection or output length, supply them according to `python scripts/benchmark.py --help`.
 
 ### Example: compare speculative-token counts
 
-```bash
-python scripts/benchmark.py \
-  --mode both \
-  -K 2 4 \
-  --device xpu \
-  --dtype float32 \
+```powershell
+python scripts/benchmark.py `
+  --mode both `
+  -K 2 4 `
+  --device xpu `
+  --dtype float32 `
   --out benchmarks/results/k_sweep.json
 ```
 
@@ -924,3 +924,6 @@ These are possible extensions, not claims that the features are already implemen
 
 ---
 
+## License
+
+The repository is listed as using the **MIT License**. See the [`LICENSE`](LICENSE) file in the repository for the complete license text.
