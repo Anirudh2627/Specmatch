@@ -40,6 +40,11 @@ def summarize(records: list) -> dict:
     tps = [r["tokens_per_sec"] for r in records]
     proposed = sum(r["proposed"] for r in records)
     accepted = sum(r["accepted"] for r in records)
+    accepted_per_iter = [
+        count
+        for record in records
+        for count in record.get("accepted_per_iter", [])
+    ]
     out = {
         "runs": len(records),
         "mean_tokens_per_sec": mean(tps),
@@ -54,8 +59,8 @@ def summarize(records: list) -> dict:
         "accepted": accepted,
         # token-level acceptance rate = accepted proposals / proposed tokens
         "acceptance_rate": accepted / proposed if proposed else None,
-        "mean_accepted_per_iter": mean([r["accepted"] / r["target_forwards"] for r in records])
-        if records[0].get("target_forwards") else None,
+        "mean_accepted_per_iter": mean(accepted_per_iter)
+        if accepted_per_iter else None,
         "mean_tokens_per_target_forward": mean([r["mean_tokens_per_target_forward"] for r in records]),
         "mean_target_forwards": mean([r["target_forwards"] for r in records]),
         "mean_draft_forwards": mean([r["draft_forwards"] for r in records]),
