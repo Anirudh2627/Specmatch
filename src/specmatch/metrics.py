@@ -48,6 +48,10 @@ def summarize(records: list) -> dict:
     out = {
         "runs": len(records),
         "mean_tokens_per_sec": mean(tps),
+        "aggregate_tokens_per_sec": (
+            sum(r["new_tokens"] for r in records) / sum(wall)
+            if sum(wall) > 0 else 0.0
+        ),
         "std_tokens_per_sec": stdev(tps),
         "mean_wall_time": mean(wall),
         "p50_wall_time": percentile(wall, 50),
@@ -78,8 +82,26 @@ def summarize_by(records: list, key: str) -> dict:
 
 
 def speedup(spec_summary: dict, base_summary: dict) -> dict:
+    """Compare speculative generation against baseline generation."""
+    spec_tps = spec_summary.get(
+        "aggregate_tokens_per_sec",
+        spec_summary["mean_tokens_per_sec"],
+    )
+    base_tps = base_summary.get(
+        "aggregate_tokens_per_sec",
+        base_summary["mean_tokens_per_sec"],
+    )
+
     return {
-        "throughput_speedup": spec_summary["mean_tokens_per_sec"] / base_summary["mean_tokens_per_sec"],
-        "latency_speedup_p50": base_summary["p50_wall_time"] / spec_summary["p50_wall_time"],
-        "latency_speedup_mean": base_summary["mean_wall_time"] / spec_summary["mean_wall_time"],
+        "throughput_speedup": spec_tps / base_tps if base_tps > 0 else 0.0,
+        "latency_speedup_p50": (
+            base_summary["p50_wall_time"] / spec_summary["p50_wall_time"]
+            if spec_summary["p50_wall_time"] > 0
+            else 0.0
+        ),
+        "latency_speedup_mean": (
+            base_summary["mean_wall_time"] / spec_summary["mean_wall_time"]
+            if spec_summary["mean_wall_time"] > 0
+            else 0.0
+        ),
     }

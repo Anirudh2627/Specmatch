@@ -47,3 +47,33 @@ def test_mean_accepted_per_iter_missing_data():
     result = summarize([record])
 
     assert result["mean_accepted_per_iter"] is None
+
+
+def test_aggregate_tokens_per_sec():
+    records = [
+        {
+            "wall_time": 1.0,
+            "tokens_per_sec": 10.0,
+            "new_tokens": 8,
+            "proposed": 0,
+            "accepted": 0,
+            "target_forwards": 8,
+            "mean_tokens_per_target_forward": 1.0,
+            "draft_forwards": 0,
+        },
+        {
+            "wall_time": 2.0,
+            "tokens_per_sec": 8.0,
+            "new_tokens": 16,
+            "proposed": 0,
+            "accepted": 0,
+            "target_forwards": 16,
+            "mean_tokens_per_target_forward": 1.0,
+            "draft_forwards": 0,
+        },
+    ]
+
+    result = summarize(records)
+
+    assert result["aggregate_tokens_per_sec"] == 8.0
+    assert result["mean_tokens_per_sec"] == 9.0
