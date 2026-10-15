@@ -124,40 +124,87 @@ def run_benchmark(prompts: list, cfg: SpecConfig, mode: str = "both",
 
     records = []
     warm_prompt = {"id": "warmup", "category": "warmup", "prompt": "Warmup run."}
-    for m in modes:
-        if warmup:
-            # untimed warmup: touches all code paths, allocates caches,
-            # settles CPU frequency scaling
-            wcfg = SpecConfig(**{**cfg.to_dict(), "max_new_tokens": 8, "seed": 0})
+
+    # Warm up every requested mode before collecting any measurements.
+    if warmup:
+        wcfg = SpecConfig(**{
+            **cfg.to_dict(),
+            "max_new_tokens": 8,
+            "seed": 0,
+        })
+
+        for m in modes:
             if m == "baseline":
-                baseline_generate(target_m, tokenizer, warm_prompt["prompt"], wcfg, device)
+                baseline_generate(
+                    target_m, tokenizer, warm_prompt["prompt"], wcfg, device
+                )
             else:
-                speculative_generate(draft_m, target_m, tokenizer, warm_prompt["prompt"], wcfg, device)
-        for prompt_entry in prompts:
-            for rep in range(reps):
+                speculative_generate(
+                    draft_m, target_m, tokenizer, warm_prompt["prompt"],
+                    wcfg, device
+                )
+
+    # Interleave modes for each prompt/repetition. Alternate which mode runs
+    # first to reduce systematic ordering bias.
+    for prompt_index, prompt_entry in enumerate(prompts):
+        for rep in range(reps):
+            run_modes = list(modes)
+
+            if len(run_modes) == 2 and (prompt_index + rep) % 2 == 1:
+                run_modes.reverse()
+
+            for m in run_modes:
                 rcfg = SpecConfig(**cfg.to_dict())
-                # different seed per rep so sampling runs don't repeat, but
-                # identical seeds across modes for the same (prompt, rep)
-                rcfg.seed = None if cfg.seed is None else cfg.seed + 1000 * rep
-                t0 = time.perf_counter()
-                if m == "baseline":
-                    _, stats = baseline_generate(target_m, tokenizer, prompt_entry["prompt"], rcfg, device)
-                else:
-                    _, stats = speculative_generate(draft_m, target_m, tokenizer, prompt_entry["prompt"], rcfg, device)
-                if progress:
-                    dt = time.perf_counter() - t0
-                    print(f"  [{m:13s}] {prompt_entry['id']:22s} rep{rep} "
-                          f"{stats.new_tokens:3d} tok in {dt:5.2f}s "
-                          f"({stats.tokens_per_sec:5.1f} tok/s"
-                          + (f", acc {stats.acceptance_rate:.2f}" if stats.acceptance_rate is not None else "")
-                          + ")")
-                accel_peak = accelerator_peak_mb(device)
+
+                # Match seeds across modes for each prompt/repetition.
+                rcfg.seed = (
+                    None if cfg.seed is None else cfg.seed + 1000 * rep
+                )
+
+                # Reset peak-memory counters before each measured run.
                 if device.type == "cuda":
                     torch.cuda.reset_peak_memory_stats()
                 elif device.type == "xpu" and hasattr(torch, "xpu"):
                     torch.xpu.reset_peak_memory_stats()
-                records.append(_stats_to_record(stats, m, prompt_entry, rcfg, device, dtype,
-                                                cfg.draft_model, cfg.target_model, rep, accel_peak))
+
+                t0 = time.perf_counter()
+
+                if m == "baseline":
+                    _, stats = baseline_generate(
+                        target_m, tokenizer, prompt_entry["prompt"],
+                        rcfg, device
+                    )
+                else:
+                    _, stats = speculative_generate(
+                        draft_m, target_m, tokenizer, prompt_entry["prompt"],
+                        rcfg, device
+                    )
+
+                if progress:
+                    dt = time.perf_counter() - t0
+                    print(
+                        f"  [{m:13s}] {prompt_entry['id']:22s} rep{rep} "
+                        f"{stats.new_tokens:3d} tok in {dt:5.2f}s "
+                        f"({stats.tokens_per_sec:5.1f} tok/s"
+                        + (
+                            f", acc {stats.acceptance_rate:.2f}"
+                            if stats.acceptance_rate is not None else ""
+                        )
+                        + ")"
+                    )
+
+                accel_peak = accelerator_peak_mb(device)
+
+                record = _stats_to_record(
+                    stats, m, prompt_entry, rcfg, device, dtype,
+                    cfg.draft_model, cfg.target_model, rep, accel_peak
+                )
+
+                if m == "baseline" and len(modes) > 1:
+                    record["comparison_K"] = cfg.num_speculative_tokens
+
+                records.append(record)
+
     return records
 
 

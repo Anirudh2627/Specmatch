@@ -17,6 +17,14 @@ from .config import GenConfig
 from .sampling import greedy_token, sample_token, shaped_probs
 
 
+def synchronize_device(device):
+    """Wait for pending accelerator work before measuring elapsed time."""
+    if device.type == "xpu":
+        torch.xpu.synchronize(device)
+    elif device.type == "cuda":
+        torch.cuda.synchronize(device)
+
+
 @dataclass
 class GenStats:
     prompt_tokens: int = 0
@@ -84,6 +92,7 @@ def baseline_generate(model, tokenizer, prompt: str, cfg: GenConfig,
 
     cache = new_cache()
     generated = []
+    synchronize_device(device)
     t_start = time.perf_counter()
     ttft = None
 
@@ -102,6 +111,7 @@ def baseline_generate(model, tokenizer, prompt: str, cfg: GenConfig,
         forward_tokens += 1
         next_tok = pick_token(_shape(logits[0, -1], cfg), cfg, generator)
 
+    synchronize_device(device)
     wall = time.perf_counter() - t_start
     stats = GenStats(
         prompt_tokens=prompt_len,

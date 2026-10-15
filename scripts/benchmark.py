@@ -48,6 +48,21 @@ def build_parser():
     return p
 
 
+def build_summary_groups(records, mode):
+    """Return (mode, K) groups for the benchmark CLI summary."""
+    if mode == "both":
+        comparison_ks = sorted(
+            {r["K"] for r in records if r["mode"] == "speculative"}
+        )
+        return [
+            (record_mode, k)
+            for k in comparison_ks
+            for record_mode in ("baseline", "speculative")
+        ]
+
+    return sorted({(r["mode"], r["K"]) for r in records})
+
+
 def main():
     args = build_parser().parse_args()
     device = resolve_device(args.device)
@@ -68,32 +83,79 @@ def main():
                           top_p=args.top_p, top_k=args.top_k, seed=args.seed,
                           draft_model=args.draft, target_model=args.target, dtype=args.dtype)
 
-    if args.mode in ("baseline", "both"):
+    if args.mode == "baseline":
         print(f"\n--- baseline ({args.target}) ---")
-        all_records += run_benchmark(prompts, base_cfg, mode="baseline", device=device,
-                                     dtype=dtype, reps=args.reps, warmup=not args.no_warmup,
-                                     tokenizer=tokenizer, draft=draft, target=target)
+        all_records = run_benchmark(
+            prompts, base_cfg, mode="baseline",
+            device=device, dtype=dtype, reps=args.reps,
+            warmup=not args.no_warmup,
+            tokenizer=tokenizer, draft=draft, target=target,
+        )
 
-    if args.mode in ("speculative", "both"):
+    elif args.mode == "speculative":
         for K in args.num_speculative_tokens:
             print(f"\n--- speculative K={K} ({args.draft} -> {args.target}) ---")
-            cfg = SpecConfig(**{**base_cfg.to_dict(), "num_speculative_tokens": K})
-            all_records += run_benchmark(prompts, cfg, mode="speculative", device=device,
-                                         dtype=dtype, reps=args.reps, warmup=not args.no_warmup,
-                                         tokenizer=tokenizer, draft=draft, target=target)
+            cfg = SpecConfig(**{
+                **base_cfg.to_dict(),
+                "num_speculative_tokens": K,
+            })
+            all_records += run_benchmark(
+                prompts, cfg, mode="speculative",
+                device=device, dtype=dtype, reps=args.reps,
+                warmup=not args.no_warmup,
+                tokenizer=tokenizer, draft=draft, target=target,
+            )
+
+    else:  # both
+        for K in args.num_speculative_tokens:
+            print(f"\n--- interleaved baseline vs speculative K={K} ---")
+            cfg = SpecConfig(**{
+                **base_cfg.to_dict(),
+                "num_speculative_tokens": K,
+            })
+            all_records += run_benchmark(
+                prompts, cfg, mode="both",
+                device=device, dtype=dtype, reps=args.reps,
+                warmup=not args.no_warmup,
+                tokenizer=tokenizer, draft=draft, target=target,
+            )
 
     save_records(all_records, args.out)
 
     # quick on-the-spot summary so a run can be sanity-checked without notebooks
     print("\n=== summary ===")
-    for group in sorted({(r["mode"], r["K"]) for r in all_records}):
+    summary_groups = build_summary_groups(all_records, args.mode)
+
+    for group in summary_groups:
         mode, K = group
-        recs = [r for r in all_records if r["mode"] == mode and r["K"] == K]
+        if args.mode == "both":
+            if mode == "baseline":
+                recs = [
+                    r for r in all_records
+                    if r["mode"] == "baseline" and r.get("comparison_K") == K
+                ]
+            else:
+                recs = [
+                    r for r in all_records
+                    if r["mode"] == "speculative" and r["K"] == K
+                ]
+        elif mode == "baseline":
+            recs = [r for r in all_records if r["mode"] == "baseline"]
+        else:
+            recs = [
+                r for r in all_records
+                if r["mode"] == "speculative" and r["K"] == K
+            ]
         s = summarize(recs)
         acc = f" acc={s['acceptance_rate']:.3f}" if s["acceptance_rate"] is not None else ""
-        print(f"{mode:13s} K={K}: {s['mean_tokens_per_sec']:5.2f} tok/s "
-              f"(p50 {s['p50_wall_time']:.2f}s p95 {s['p95_wall_time']:.2f}s) "
-              f"tok/fwd={s['mean_tokens_per_target_forward']:.2f}{acc}")
+        print(
+            f"{mode:13s} K={K}: "
+            f"{s['aggregate_tokens_per_sec']:5.2f} aggregate tok/s "
+            f"(mean {s['mean_tokens_per_sec']:5.2f}, "
+            f"p50 {s['p50_wall_time']:.2f}s "
+            f"p95 {s['p95_wall_time']:.2f}s) "
+            f"tok/fwd={s['mean_tokens_per_target_forward']:.2f}{acc}"
+        )
 
 
 if __name__ == "__main__":

@@ -35,7 +35,12 @@ import torch
 
 from .cache import forward_with_cache, new_cache, truncate_cache
 from .config import SpecConfig
-from .generate import GenStats, make_generator, pick_token
+from .generate import (
+    GenStats,
+    make_generator,
+    pick_token,
+    synchronize_device,
+)
 from .sampling import accept_proposal, greedy_accept, shaped_probs
 
 
@@ -73,6 +78,7 @@ def speculative_generate(draft, target, tokenizer, prompt: str, cfg: SpecConfig,
     target_cache, draft_cache = new_cache(), new_cache()
     stats = GenStats(prompt_tokens=prompt_len)
 
+    synchronize_device(device)
     t_start = time.perf_counter()
 
     # Prefill on prompt[:-1] so that even the first iteration goes through the
@@ -197,6 +203,7 @@ def speculative_generate(draft, target, tokenizer, prompt: str, cfg: SpecConfig,
         if hit_eos or new_len - prompt_len >= cfg.max_new_tokens:
             break
 
+    synchronize_device(device)
     stats.wall_time = time.perf_counter() - t_start
     stats.new_tokens = len(seq) - prompt_len
     stats.token_ids = seq[prompt_len:]
